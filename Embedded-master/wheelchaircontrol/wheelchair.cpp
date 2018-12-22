@@ -1,7 +1,7 @@
 #include "wheelchair.h"
  
-bool manual_drive = false;                                                             // Variable Changes between joystick and auto drive
-double curr_yaw, curr_velS;                                                             // Variable that contains current relative angle
+bool manual_drive = false;                                                             // Variable changes between joystick and auto drive
+double curr_yaw, curr_velS;                                                            // Variable that contains current relative angle
 double encoder_distance;                                                               // Keeps distanse due to original position
  
 volatile double Setpoint, Output, Input, Input2;                                       // Variables for PID
@@ -14,98 +14,114 @@ double dist_old, curr_pos;
 
  
 PID myPID(&pid_yaw, &Output, &Setpoint, 5.5, .00, 0.0036, P_ON_E, DIRECT);             // Angle PID object constructor
-PID myPIDDistance(&Input, &Output, &Setpoint, 5.5, .00, 0.002, P_ON_E, DIRECT);       // Distance PID object constructor
+PID myPIDDistance(&Input, &Output, &Setpoint, 5.5, .00, 0.002, P_ON_E, DIRECT);        // Distance PID object constructor
 PID PIDVelosity(&vIn, &vOut, &vDesired, 5.5, .00, .002, P_ON_E, DIRECT);
 PID PIDSlaveV(&vInS, &vOutS, &vDesiredS, 5.5, .00, .002, P_ON_E, DIRECT);
 PID PIDAngularV(&yIn, &yOut, &yDesired, 5.5, .00, .002, P_ON_E, DIRECT);
  
-void Wheelchair::compass_thread() {                                                    // Thread that measures which angle we are at
+
+/* Thread measures current angular position */
+void Wheelchair::compass_thread() 
+{    
      curr_yaw = imu->yaw();
      z_angular = curr_yaw;
-    }
-void Wheelchair::velosity_thread() {
+}
+
+/* Thread measures velocity of wheels and distance traveled */
+void Wheelchair::velosity_thread() 
+{
     curr_vel = wheel->getVelosity();
-     curr_velS = wheelS->getVelosity();
-     curr_pos = wheel->getDistance(53.975);
-     }
-Wheelchair::Wheelchair(PinName xPin, PinName yPin, Serial* pc, Timer* time, QEI* qei, QEI* qeiS)   // Function Constructor for Wheelchair class
+    curr_velS = wheelS->getVelosity();
+    curr_pos = wheel->getDistance(53.975);
+}
+
+/* Constructor for Wheelchair class */
+Wheelchair::Wheelchair(PinName xPin, PinName yPin, Serial* pc, Timer* time, QEI* qei, QEI* qeiS)
 {
     x_position = 0;
     y_position = 0;
-    //Initializes X and Y variables to Pins
+    /* Initializes X and Y variables to Pins */
     x = new PwmOut(xPin);                                                               
     y = new PwmOut(yPin);
-    odom_vector[0] = 0;
-    odom_vector[1] = 0;
-    odom_vector[2] = 0;
-    // Initializes IMU Library
+    /* Initializes IMU Library */
     imu = new chair_BNO055(pc, time);
-    Wheelchair::stop();                                                                 // Wheelchair is not moving when initializing
+    Wheelchair::stop();                                                                 // Wheelchair is initially stationary
     imu->setup();                                                                       // turns on the IMU
     out = pc;                                                                           // "out" is called for serial monitor
-    wheelS = qeiS;                                                              // "wheel" is called for encoder
+    wheelS = qeiS;                                                                      // "wheel" is called for encoder
     wheel = qei;          
-    out->printf("wheelchair setup done \r\n");                                          // make sure it initialized
+    out->printf("wheelchair setup done \r\n");                                          // Make sure it initialized; prints in serial monitor
     ti = time;
-    myPID.SetMode(AUTOMATIC);                                                           // set PID to automatic
+    myPID.SetMode(AUTOMATIC);                                                           // set PID to automatic mode
 }
- 
-void Wheelchair::move(float x_coor, float y_coor)                                       // moves the chair with joystick on manual
+
+/* Move wheelchair with joystick on manual mode */
+void Wheelchair::move(float x_coor, float y_coor)                                
 {
- 
-    float scaled_x = ((x_coor * 1.6f) + 1.7f)/3.3f;                                     // Scales one joystic measurement to the
-    float scaled_y = (3.3f - (y_coor * 1.6f))/3.3f;                                     // chair's joystic measurement
-    
-    x->write(scaled_x);                                                                 // Sends the scaled joystic values to the chair
+  /* Scales one joystick measurement to the chair's joystick measurement */
+    float scaled_x = ((x_coor * 1.6f) + 1.7f)/3.3f;
+    float scaled_y = (3.3f - (y_coor * 1.6f))/3.3f;
+
+  /* Sends the scaled joystic values to the chair */
+    x->write(scaled_x);                                                         
     y->write(scaled_y);
 }
  
-void Wheelchair::forward()                                                              // In auto to move foward
+/* Automatic mode: move forward and update x,y coordinate */
+void Wheelchair::forward()                                                              
 {
     x->write(high);
     y->write(def+offset);
 }
  
-void Wheelchair::backward()                                                             // In auto to move reverse
+/* Automatic mode: move in reverse and update x,y coordinate */
+void Wheelchair::backward()                    
 {
     x->write(low);
     y->write(def);
 }
  
-void Wheelchair::right()                                                                // In auto to move right
+/* Automatic mode: move right and update x,y coordinate */
+void Wheelchair::right()                                                             
 {
     x->write(def);
     y->write(low);
 }
- 
-void Wheelchair::left()                                                                 // In auto to move left
+
+ /* Automatic mode: move left and update x,y coordinate */
+void Wheelchair::left()                                                               
 {
     x->write(def);
     y->write(high);
 }
  
-void Wheelchair::stop()                                                                 // Stops the chair
+/* Stop the wheelchair */
+void Wheelchair::stop()                                                       
 {
     x->write(def);
     y->write(def);
 }
-// counter clockwise is -
-// clockwise is +
-void Wheelchair::pid_right(int deg)                                                     // Takes in degree and turns right
+
+/* Counter-clockwise is -
+ * Clockwise is +
+ * Range of deg: 0 to 360
+ * This function takes in an angle from user and adjusts for turning right 
+ */
+void Wheelchair::pid_right(int deg)
 {
-    bool overturn = false;                                                              //Boolean if we have to turn over relative 360˚
+    bool overturn = false;                                                              //Boolean if we have to determine coterminal angle
     
     out->printf("pid right\r\r\n");                                
-    x->write(def);                                                                      // Not moving fowards or reverse
+    x->write(def);                                                                      // Update x for not moving foward or reverse
     Setpoint = curr_yaw + deg;                                                          // Relative angle we want to turn
-    pid_yaw = curr_yaw;                                                                 // Sets input to current angle(pid_yaw = input)
+    pid_yaw = curr_yaw;                                                                 // Sets pid_yaw input to current angle
     
     if(Setpoint > 360) {                                                                //Turns on overturn boolean if setpoint over 360˚
         overturn = true;
     }
     
     myPID.SetTunings(5.5,0, 0.0035);                                                    // Sets the constants for P and D
-    myPID.SetOutputLimits(0, def-low-.15);                                              // Limits to the differnce between def and low
+    myPID.SetOutputLimits(0, def-low-.15);                                              // Limit is set to the differnce between def and low
     myPID.SetControllerDirection(DIRECT);                                               // PID mode Direct
     
     while(pid_yaw < Setpoint - 3){                                                      // Tells PID to stop when reaching
@@ -130,7 +146,9 @@ void Wheelchair::pid_right(int deg)                                             
     out->printf("done \r\n");
 }
  
-void Wheelchair::pid_left(int deg)                                                      // Takes in degree and turns left
+
+/* This function takes in an angle from user and adjusts for turning left */
+void Wheelchair::pid_left(int deg)                                                      
 {
     bool overturn = false;                                                              //Boolean if we have to turn under relative 0˚
     
@@ -138,7 +156,8 @@ void Wheelchair::pid_left(int deg)                                              
     x->write(def);                                                                      // Not moving fowards or reverse
     Setpoint = curr_yaw - deg;                                                          // Relative angle we want to turn
     pid_yaw = curr_yaw;                                                                 // Sets input to current angle(pid_yaw = input)
-    if(Setpoint < 0) {                                                                  //Turns on overturn boolean if setpoint under 0˚
+    if(Setpoint < 0) 
+    {                                                                  //Turns on overturn boolean if setpoint under 0˚
         overturn = true;
     }
     myPID.SetTunings(5,0, 0.004);                                                       // Sets the constants for P and D
