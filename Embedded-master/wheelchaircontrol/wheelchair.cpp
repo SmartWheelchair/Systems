@@ -52,7 +52,7 @@ Wheelchair::Wheelchair(PinName xPin, PinName yPin, Serial* pc, Timer* time, QEI*
     wheel = qei;          
     out->printf("wheelchair setup done \r\n");                                          // Make sure it initialized; prints in serial monitor
     ti = time;
-    myPID.SetMode(AUTOMATIC);                                                           // set PID to automatic mode
+    myPID.SetMode(AUTOMATIC);                                                           // PID mode: Automatic
 }
 
 /* Move wheelchair with joystick on manual mode */
