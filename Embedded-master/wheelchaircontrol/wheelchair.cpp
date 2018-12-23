@@ -67,28 +67,28 @@ void Wheelchair::move(float x_coor, float y_coor)
     y->write(scaled_y);
 }
  
-/* Automatic mode: move forward and update x,y coordinate */
+/* Automatic mode: move forward and update x,y coordinate sent to chair */
 void Wheelchair::forward()                                                              
 {
     x->write(high);
     y->write(def+offset);
 }
  
-/* Automatic mode: move in reverse and update x,y coordinate */
+/* Automatic mode: move in reverse and update x,y coordinate sent to chair */
 void Wheelchair::backward()                    
 {
     x->write(low);
     y->write(def);
 }
  
-/* Automatic mode: move right and update x,y coordinate */
+/* Automatic mode: move right and update x,y coordinate sent to chair */
 void Wheelchair::right()                                                             
 {
     x->write(def);
     y->write(low);
 }
 
- /* Automatic mode: move left and update x,y coordinate */
+ /* Automatic mode: move left and update x,y coordinate sent to chair */
 void Wheelchair::left()                                                               
 {
     x->write(def);
@@ -105,150 +105,207 @@ void Wheelchair::stop()
 /* Counter-clockwise is -
  * Clockwise is +
  * Range of deg: 0 to 360
- * This function takes in an angle from user and adjusts for turning right 
+ * This constructor takes in an angle from user and adjusts for turning right 
  */
 void Wheelchair::pid_right(int deg)
 {
-    bool overturn = false;                                                              //Boolean if we have to determine coterminal angle
+    bool overturn = false;                                                              //Boolean if angle over 360˚
     
     out->printf("pid right\r\r\n");                                
-    x->write(def);                                                                      // Update x for not moving foward or reverse
+    x->write(def);                                                                      // Update x sent to chair to be stationary
     Setpoint = curr_yaw + deg;                                                          // Relative angle we want to turn
-    pid_yaw = curr_yaw;                                                                 // Sets pid_yaw input to current angle
+    pid_yaw = curr_yaw;                                                                 // Sets pid_yaw to angle input from user
     
-    if(Setpoint > 360) {                                                                //Turns on overturn boolean if setpoint over 360˚
+    /* Turns on overturn boolean if setpoint over 360˚ */
+    if(Setpoint > 360) 
+    {                                                               
         overturn = true;
     }
     
     myPID.SetTunings(5.5,0, 0.0035);                                                    // Sets the constants for P and D
     myPID.SetOutputLimits(0, def-low-.15);                                              // Limit is set to the differnce between def and low
-    myPID.SetControllerDirection(DIRECT);                                               // PID mode Direct
+    myPID.SetControllerDirection(DIRECT);                                               // PID mode: Direct
     
-    while(pid_yaw < Setpoint - 3){                                                      // Tells PID to stop when reaching
-                                                                                        // a little less than desired angle
-        if(overturn && curr_yaw < Setpoint-deg-1)                                       // Sets PID yaw to coterminal angle if necesary
+    /* PID stops when approaching a litte less than desired angle */ 
+    while(pid_yaw < Setpoint - 3)
+    {                                       
+        /* PID is set to correct angle range if angle greater than 360˚*/
+        if(overturn && curr_yaw < Setpoint-deg-1)
         {
-            pid_yaw = curr_yaw + 360;
-        }   
-        else
+            pid_yaw = curr_yaw + 360;  
+        }
+        else 
+        {
             pid_yaw = curr_yaw;
+        }
             
         myPID.Compute();                                                                // Does PID calculations
         double tempor = -Output+def;                                                    // Temporary value with the voltage output
-        y->write(tempor);                                                               // Sends to chair y output command
+        y->write(tempor);                                                               // Update y sent to chair 
         
+        /* Prints to serial monitor the current angle and setpoint */
         out->printf("curr_yaw %f\r\r\n", curr_yaw);                              
         out->printf("Setpoint = %f \r\n", Setpoint);
  
-        wait(.05);                                                                      // Small delay
-        }
-    Wheelchair::stop();                                                                 // Safety Stop
+        wait(.05);                                                                      // Small delay (milliseconds)
+    }
+ 
+    /* Saftey stop for wheelchair */
+    Wheelchair::stop();                                                                 
     out->printf("done \r\n");
 }
  
-
-/* This function takes in an angle from user and adjusts for turning left */
+/* Counter-clockwise is -
+ * Clockwise is +
+ * Range of deg: 0 to 360
+ * This constructor takes in an angle from user and adjusts for turning left
+ */
 void Wheelchair::pid_left(int deg)                                                      
 {
-    bool overturn = false;                                                              //Boolean if we have to turn under relative 0˚
+    bool overturn = false;                                                              //Boolean if angle under 0˚
     
     out->printf("pid Left\r\r\n");                                                     
-    x->write(def);                                                                      // Not moving fowards or reverse
+    x->write(def);                                                                      // Update x sent to chair to be stationary
     Setpoint = curr_yaw - deg;                                                          // Relative angle we want to turn
-    pid_yaw = curr_yaw;                                                                 // Sets input to current angle(pid_yaw = input)
+    pid_yaw = curr_yaw;                                                                 // Sets pid_yaw to angle input from user
+ 
+    /* Turns on overturn boolean if setpoint less than 0˚ */
     if(Setpoint < 0) 
-    {                                                                  //Turns on overturn boolean if setpoint under 0˚
+    {                                                                 
         overturn = true;
     }
+ 
     myPID.SetTunings(5,0, 0.004);                                                       // Sets the constants for P and D
-    myPID.SetOutputLimits(0,high-def-.12);                                              // Limits to the differnce between High and Def
-    myPID.SetControllerDirection(REVERSE);                                              // PID mode Reverse
-    while(pid_yaw > Setpoint+3){                                                        // Tells PID to stop when reaching
-                                                                                        // a little more than desired angle
-       if(overturn && curr_yaw > Setpoint+deg+1)                                        // Sets PID yaw to coterminal angle if necesary
+    myPID.SetOutputLimits(0,high-def-.12);                                              //Limit is set to the differnce between def and low
+    myPID.SetControllerDirection(REVERSE);                                              // PID mode: Reverse
+ 
+    /* PID stops when approaching a litte more than desired angle */
+    while(pid_yaw > Setpoint+3)
+    {                                                        
+       /* PID is set to correct angle range if angle less than 0˚ */                                                                          
+       if(overturn && curr_yaw > Setpoint+deg+1) 
        {
           pid_yaw = curr_yaw - 360;
-        }   
-        else
-            pid_yaw = curr_yaw;
-            
+       }
+       else 
+       {
+          pid_yaw = curr_yaw;
+       }
+     
         myPID.Compute();                                                                // Does PID calculations
         double tempor = Output+def;                                                     // Temporary value with the voltage output
-        y->write(tempor);                                                               // Sends to chair y output command
-        
+        y->write(tempor);                                                               // Update y sent to chair
+     
+        /* Prints to serial monitor the current angle and setpoint */
         out->printf("curr_yaw %f\r\n", curr_yaw);
-        wait(.05);                                                                      // Small Delay
-        }
-    Wheelchair::stop();                                                                 // Safety Stop
+        out->printf("Setpoint = %f \r\n", Setpoint);
+     
+        wait(.05);                                                                      // Small delay (milliseconds)
+    }
+ 
+   /* Saftey stop for wheelchair */
+    Wheelchair::stop();                                                                 
+    out->printf("done \r\n");
+
 }
  
-void Wheelchair::pid_turn(int deg) {                                                    // Determine wether we are turn right or left
+/* This constructor determines whether to turn left or right */
+void Wheelchair::pid_turn(int deg) 
+{    
  
-    if(deg > 180) {                                                                     // If deg > 180 turn left: coterminal angle
+   /* Sets angle to coterminal angle for left turn if deg > 180
+    * Sets angle to coterminal angle for right turn if deg < -180
+    */
+    if(deg > 180)
+    {                                                                   
         deg -= 360;
     }
- 
-    else if(deg < -180) {                                                               // If deg < -180 turn right: coterminal angle
-        deg+=360;
+    else if(deg < -180)
+    {                                    
+        deg +=360;
     }  
     
-    int turnAmt = abs(deg);                                                             // Makes sure input angle is positive
+    /* Makes sure angle inputted to function is positive */
+    int turnAmt = abs(deg);
  
-    if(deg >= 0){
-        Wheelchair::pid_right(turnAmt);                                                 // Calls PID right if positive degree
+    /* Calls PID_right if deg > 0, else calls PID_left if deg < 0 */
+    if(deg >= 0)
+    {
+        Wheelchair::pid_right(turnAmt);                                                
     }
-    else {
-        Wheelchair::pid_left(turnAmt);                                                  // Calls PID left if negative degree
+    else
+    {
+        Wheelchair::pid_left(turnAmt);                        
     }
+
 }
+
+/* This constructor takes in distance to travel and adjust to move forward */
 void Wheelchair::pid_forward(double mm)
 {
     mm -= 20;                                                                           // Makes sure distance does not overshoot
-    Input = 0;                                                                          // Initializes imput to cero: Test latter w/o
+    Input = 0;                                                                          // Initializes input to zero: Test latter w/o
     wheel->reset();                                                                     // Resets encoders so that they start at 0
+ 
     out->printf("pid foward\r\n");
  
     double tempor;                                                                      // Initializes Temporary variable for x input
     Setpoint = mm;                                                                      // Initializes the setpoint to desired value
  
     myPIDDistance.SetTunings(5.5,0, 0.0015);                                            // Sets constants for P and D
-    myPIDDistance.SetOutputLimits(0,high-def-.15);                                      // Limits to the differnce between High and Def 
-    myPIDDistance.SetControllerDirection(DIRECT);                                       // PID to Direct
-    y->write(def+offset);                                                               // Sets chair to not turn
+    myPIDDistance.SetOutputLimits(0,high-def-.15);                                      // Limit set to difference between high and def 
+    myPIDDistance.SetControllerDirection(DIRECT);                                       // PID mode: Direct
+ 
+    y->write(def+offset);                                                               // Update y to make chair stationary
     
-    while(Input < Setpoint){                                                            // Stop moving when reaching setpoint
-    
+    /* Chair stops moving when Setpoint is reached */
+    while(Input < Setpoint){      
+     
         if(out->readable())                                                             // Emergency Break
+        {                                                    
             break;
-            
-        Input = wheel->getDistance(53.975);                                             // Gets Distance from Encoder onto PID
+        }
+
+        Input = wheel->getDistance(53.975);                                             // Gets distance from Encoder into PID
         wait(.05);                                                                      // Slight Delay: *****Test without
-        myPIDDistance.Compute();                                                        // Compute Output for chair
+        myPIDDistance.Compute();                                                        // Compute distance traveled by chair
  
         tempor = Output + def;                                                          // Temporary output variable                    
-        x->write(tempor);                                                               // Sends to chair x output
+        x->write(tempor);                                                               // Update x sent to chair
+     
+        /* Prints to serial monitor the distance traveled by chair */
         out->printf("distance %f\r\n", Input);
         }
     
 }   
+
+/* This constructor returns the relative angular position of chair */
 double Wheelchair::getTwistZ()
 {
     return imu->gyro_z();
-
 }   
+
+/* This constructor computes the relative angle for Twist message in ROS */
 void Wheelchair::pid_twistA()
 {
+    /* Initialize variables for angle and update x,y sent to chair */
     char c;
     double temporA = def;
     y->write(def); 
     x->write(def); 
  
-    PIDAngularV.SetTunings(.00015,0, 0.00);                                                    // Sets the constants for P and D
-    PIDAngularV.SetOutputLimits(-.1, .1);                                              // Limits to the differnce between def and low
-    PIDAngularV.SetControllerDirection(DIRECT);                                               // PID mode Direct
+    PIDAngularV.SetTunings(.00015,0, 0.00);                                             // Sets the constants for P and D
+    PIDAngularV.SetOutputLimits(-.1, .1);                                               // Limit set to be in range specified
+    PIDAngularV.SetControllerDirection(DIRECT);                                         // PID mode: Direct
+ 
+    /* Computes angular position of wheelchair while turning */
     while(1)
     {
         yDesired = angularV;
+     
+        /* Update and set all variable so that the chair is stationary
+         * if the desired angle is zero
+         */
         if(yDesired == 0)
         {
             x->write(def);
@@ -256,34 +313,48 @@ void Wheelchair::pid_twistA()
             yDesired = 0;
             return;
         }
-          
+         
+        /* Continuously updates with current angle measured by IMU */
         yIn = imu->gyro_z(); 
         PIDAngularV.Compute();
-        temporA += yOut;                                                     // Temporary value with the voltage output
-        y->write(temporA); 
+        temporA += yOut;                                                                // Temporary value with the voltage output
+        y->write(temporA);                                                              // Update y sent to chair
+     
         //out->printf("temporA: %f, yDesired %f, angle: %f\r\n", temporA, yDesired, imu->gyro_z());
-        wait(.05);
+        wait(.05);                                                                      // Small delay (milliseconds)
     }
+ 
 }    
+
+/* This constructor computes the relative velocity for Twist message in ROS */
 void Wheelchair::pid_twistV()
 {
+    /* Initializes variables as default */
     double temporV = def;
     double temporS = def;
     vDesiredS = 0;
     x->write(def);
     y->write(def);
-    wheel->reset();
-    PIDVelosity.SetTunings(.00005,0, 0.00);                                                    // Sets the constants for P and D
-    PIDSlaveV.SetTunings(.004,0.000001, 0.000001);                                                    // Sets the constants for P and D
-    PIDVelosity.SetOutputLimits(-.005, .005);                                              // Limits to the differnce between def and low
-    PIDSlaveV.SetOutputLimits(-.002, .002);                                              // Limits to the differnce between def and low
+    wheel->reset();                                                                     // Resets the encoders
+ 
+    PIDVelosity.SetTunings(.00005,0, 0.00);                                             // Sets the constants for P and D
+    PIDSlaveV.SetTunings(.004,0.000001, 0.000001);                                      // Sets the constants for P and D
+    PIDVelosity.SetOutputLimits(-.005, .005);                                           // Limits to the range specified
+    PIDSlaveV.SetOutputLimits(-.002, .002);                                             // Limits to the range specified
+ 
+    /* PID mode: Direct */
     PIDVelosity.SetControllerDirection(DIRECT); 
     PIDSlaveV.SetControllerDirection(DIRECT); 
+ 
     while(1)
     {
         test1 = linearV*100;
         vel = curr_vel;
         vDesired = linearV*100;
+     
+         /* Update and set all variable so that the chair is stationary
+         * if the velocity is zero
+         */
         if(linearV == 0)
         {
             x->write(def);
@@ -294,33 +365,47 @@ void Wheelchair::pid_twistV()
             dist_old = 0;
             return;
         }
+     
         if(vDesired >= 0)
         {
-            PIDVelosity.SetTunings(.000004,0, 0.00);                                                    // Sets the constants for P and D
-            PIDVelosity.SetOutputLimits(-.002, .002);                                              // Limits to the differnce between def and low
+            PIDVelosity.SetTunings(.000004,0, 0.00);                                    // Sets the constants for P and D
+            PIDVelosity.SetOutputLimits(-.002, .002);                                   // Limits to the range specified
         }
         else
         {
-            PIDVelosity.SetTunings(.000015,0, 0.00);                                                    // Sets the constants for P and D
-            PIDVelosity.SetOutputLimits(-.0005, .0005);                                              // Limits to the differnce between def and low
+            PIDVelosity.SetTunings(.000015,0, 0.00);                                    // Sets the constants for P and D
+            PIDVelosity.SetOutputLimits(-.0005, .0005);                                 // Limits to range specified
         }    
+        
+        /* Sets maximum value of variable to 1 */
         if(temporV >= 1)
+        {
             temporV = 1;
+        }
+     
+        /* Scales and makes some adjustments to velocity */
         vIn = curr_vel*100;
         vInS = curr_vel-curr_velS;
         PIDVelosity.Compute();
         PIDSlaveV.Compute();
         temporV += vOut;
         temporS += vOutS;
+     
+        /* Updates x,y sent to Wheelchair and for Odometry message in ROS */
         x->write(temporV);
         test2 = temporV;
         y->write(temporS);
         //out->printf("Velosity: %f, Velosity2: %f, temporV %f, temporS %f\r\n", curr_vel, curr_velS, temporV, temporS);
         Wheelchair::odomMsg();
-        wait(.01);
+        wait(.01);                                                                      // Small delay (milliseconds)
     }
 }
-void Wheelchair::odomMsg(){
+
+/* This constructor calculates the relative position of the chair everytime the encoders reset
+ * by setting its old position as the origin to calculate the new position
+ */
+void Wheelchair::odomMsg()
+{
     double dist_new = curr_pos;
     double dist = dist_new-dist_old;
     double temp_x = dist*sin(z_angular*3.14159/180);
@@ -331,36 +416,49 @@ void Wheelchair::odomMsg(){
     
     dist_old = dist_new;
  } 
- void Wheelchair::showOdom(){
+
+/* This constructor prints the Odometry message to the serial monitor */
+ void Wheelchair::showOdom()
+ {
      out->printf("x %f, y %f, angle %f", x_position, y_position, z_angular);
-}
-float Wheelchair::getDistance() {
+ }
+
+/* This constructor returns the approximate distance based on the wheel diameter */
+float Wheelchair::getDistance()
+{
     return wheel->getDistance(Diameter);
-    }
-    
-void Wheelchair::resetDistance(){
+}
+
+/* This constructor resets the wheel encoder's */
+void Wheelchair::resetDistance()
+{
     wheel->reset();
-    }
+}
+
+
 /*Predetermined paths For Demmo*/    
-void Wheelchair::desk() {
+void Wheelchair::desk() 
+{
     Wheelchair::pid_forward(5461);
     Wheelchair::pid_right(87);
     Wheelchair::pid_forward(3658);
     Wheelchair::pid_right(87);
     Wheelchair::pid_forward(3658);
-    }
+}
  
-void Wheelchair::kitchen() {
+void Wheelchair::kitchen() 
+{
     Wheelchair::pid_forward(5461);
     Wheelchair::pid_right(87);
     Wheelchair::pid_forward(3658);
     Wheelchair::pid_left(90);
     Wheelchair::pid_forward(305);
-    }
+}
  
-void Wheelchair::desk_to_kitchen(){
+void Wheelchair::desk_to_kitchen()
+{
     Wheelchair::pid_right(180);
     Wheelchair::pid_forward(3700);
-    }
+}
  
  
