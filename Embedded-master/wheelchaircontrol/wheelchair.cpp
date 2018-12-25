@@ -337,10 +337,13 @@ void Wheelchair::pid_twistV()
     y->write(def);
     wheel->reset();                                                                     // Resets the encoders
  
-    PIDVelosity.SetTunings(.00005,0, 0.00);                                             // Sets the constants for P and D
-    PIDSlaveV.SetTunings(.004,0.000001, 0.000001);                                      // Sets the constants for P and D
-    PIDVelosity.SetOutputLimits(-.005, .005);                                           // Limits to the range specified
-    PIDSlaveV.SetOutputLimits(-.002, .002);                                             // Limits to the range specified
+    /* Sets the constants for P and D */
+    PIDVelosity.SetTunings(.00005,0, 0.00);                                             
+    PIDSlaveV.SetTunings(.004,0.000001, 0.000001);     
+ 
+    /* Limits to the range specified */
+    PIDVelosity.SetOutputLimits(-.005, .005);                                           
+    PIDSlaveV.SetOutputLimits(-.002, .002);                                            
  
     /* PID mode: Direct */
     PIDVelosity.SetControllerDirection(DIRECT); 
