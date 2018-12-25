@@ -1,93 +1,130 @@
 #include "wheelchair.h"
 
-QEI wheelS(D0, D1, NC, 1200);        //Initializes right encoder
-DigitalIn pt3(D1, PullUp);          //Pull up resistors to read analog signals into digital signals
+/* Intializes the right encoder */
+QEI wheelS(D0, D1, NC, 1200);  
+/* Set pull-up resistors to read analog signals into digital signals */
+DigitalIn pt3(D1, PullUp);         
 DigitalIn pt4(D0, PullUp);
 
-QEI wheel (D6, D3, NC, 1200);    //Initializes Left encoder
-DigitalIn pt1(D6, PullUp);          //Pull up resistors to read analog signals into digital signals
+/* Initializes Left encoder */
+QEI wheel (D6, D3, NC, 1200);    
+/* Set pull-up resistors to read analog signals into digital signals */
+DigitalIn pt1(D6, PullUp);         
 DigitalIn pt2(D3, PullUp);
 
-AnalogIn x(A0);                     //Initializes analog axis for the joystick
+/* Initializes analog axis for the joystick */
+AnalogIn x(A0);                    
 AnalogIn y(A1);
 
-DigitalOut up(D2);                  //Turn up speed mode for joystick 
-DigitalOut down(D8);                //Turn down speed mode for joystick 
-DigitalOut on(D12);                 //Turn Wheelchair On
-DigitalOut off(D11);                //Turn Wheelchair Off
-bool manual = false;                //Turns chair joystic to automatic and viceverza
+/* Initializing more pins for wheelchair control */
+DigitalOut up(D2);                                                  //Turn up speed mode for joystick 
+DigitalOut down(D8);                                                //Turn down speed mode for joystick 
+DigitalOut on(D12);                                                 //Turn Wheelchair On
+DigitalOut off(D11);                                                //Turn Wheelchair Off
 
+/* Changes the control mode of wheelchair: Automatic or Manual */
+bool manual = false;                                        
 
-Serial pc(USBTX, USBRX, 57600);     //Serial Monitor
-Timer t;                            //Initialize time object t
-EventQueue queue;                   //Class to organize threads
+Serial pc(USBTX, USBRX, 57600);                                     //Serial Monitor
+Timer t;                                                            //Initialize time object t
+EventQueue queue;                                                   //Class to organize threads
 
-ros::NodeHandle nh;
-nav_msgs::Odometry odom;
-geometry_msgs::Twist commandRead;
+/* Import ROS commands to establish communication with ROS and Mbed */
+ros::NodeHandle nh;                                                 //Creates publisher and subscriber and takes care of serial port communication
+nav_msgs::Odometry odom;                                            //Create a topic odom in ROS
+geometry_msgs::Twist commandRead;                                   //Create a topic commandRead in ROS
 
+/* This function allows for receiving ROS Twist messages */
 void handlerFunction(const geometry_msgs::Twist& command){
     commandRead = command;
 }
 
-ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &handlerFunction);
-ros::Publisher chatter("odom", &odom);
-ros::Publisher chatter2("cmd_vel", &commandRead);
+/*Establishes a subcriber and publisher to respective node/topic */
+ros::Subscriber<geometry_msgs::Twist> sub("cmd_vel", &handlerFunction);   //Creates Subscriber to cmd_vel ROS topic
+ros::Publisher chatter("odom", &odom);                                    //Creates Publisher node to odom ROS topic
+ros::Publisher chatter2("cmd_vel", &commandRead);                         //Creates Publisher node to cmd_vel ROS topic
 
-Wheelchair smart(xDir,yDir, &pc, &t, &wheel, &wheelS); //Initialize wheelchair object
-Thread compass;                      //Thread for compass
-Thread velosity;                      //Thread for velosity
-Thread ros_com;                      //Thread for velosity
+/* Initialize Wheelchair objects and threads */
+Wheelchair smart(xDir,yDir, &pc, &t, &wheel, &wheelS); 
+Thread compass;                      
+Thread velosity;                      
+Thread ros_com;            
 
-
+/* This thread continues the communication with ROS and Mbed */
 void rosCom_thread();
 
 int main(void)
 {   
+    /* Initialize ROS commands to publish and subscribe to nodes */
     nh.initNode();
     nh.advertise(chatter);
     nh.advertise(chatter2);
     nh.subscribe(sub);
     
-    queue.call_every(SAMPLEFREQ, &smart, &Wheelchair::compass_thread);  //Sets up sampling frequency of the compass_thread
-    queue.call_every(SAMPLEFREQ, &smart, &Wheelchair::velosity_thread); //Sets up sampling frequency of the velosity_thread
-    queue.call_every(200, rosCom_thread); //Sets up sampling frequency of the velosity_thread
-    t.reset();
-    compass.start(callback(&queue, &EventQueue::dispatch_forever));      //Starts running the compass thread
-    velosity.start(callback(&queue, &EventQueue::dispatch_forever));     //Starts running the velosity thread
-    ros_com.start(callback(&queue, &EventQueue::dispatch_forever));     //Starts running the velosity thread
+    /* Sets up sampling frequency of threads */
+    queue.call_every(SAMPLEFREQ, &smart, &Wheelchair::compass_thread);      
+    queue.call_every(SAMPLEFREQ, &smart, &Wheelchair::velosity_thread);    
+    queue.call_every(200, rosCom_thread);                              
+    
+    t.reset();                                                            //resets the time
+    
+    /* Start running threads */
+    compass.start(callback(&queue, &EventQueue::dispatch_forever));          
+    velosity.start(callback(&queue, &EventQueue::dispatch_forever));             
+    ros_com.start(callback(&queue, &EventQueue::dispatch_forever));     
+    
+    
     while(1) {
         //pc.printf("lin x: %f, lin y %f, lin z %f, ang z %f", commandRead.linear.x, commandRead.linear.y, commandRead.linear.z, commandRead.angular.z);
-        if(commandRead.linear.x != 0) {                                        
-            smart.pid_twistV();
-        } else if(commandRead.angular.z != 0){                                        //Sends command to go to the kitchen
-                smart.pid_twistA();
-        } else {
-            smart.stop();                                              //If nothing else is happening stop the chair
+        if(commandRead.linear.x != 0) 
+        {                                        
+            smart.pid_twistV();                                           //Updates the twist linear velocity of chair
+        } 
+        else if(commandRead.angular.z != 0)                               
+        {                         
+                smart.pid_twistA();                                       //Updates the twist angular velocity of chair
+        } 
+        else
+        {
+            smart.stop();                                                 //Stops the chair
         }
-
-        wait(process);
+        wait(process);                                                    //Delay
     }
+    
 }
+
+/* This thread allows for continuous update and publishing of ROS Odometry/Twist message  */
 void rosCom_thread()
 {
+        /*Determines linear and angular velocity */
         smart.linearV = commandRead.linear.x;
         smart.angularV = commandRead.angular.z*180/3.1415926;
+    
+        /* Publishes the position of the Wheelchair for Odometry */
         odom.pose.pose.position.x = smart.x_position;
         odom.pose.pose.position.y = smart.y_position;
         odom.pose.pose.position.z = 0;
-        //set the orientation
+    
+        /* Publishes the orientation of the Wheelchair for Odometry */
         odom.pose.pose.orientation.z = sin(smart.z_angular*.5*3.1415926/180);
         odom.pose.pose.orientation.x = 0;
         odom.pose.pose.orientation.y = 0;
         odom.pose.pose.orientation.w = cos(smart.z_angular*.5*3.1415926/180);
+    
+        /* Publishes Twist linear velocity of Wheelchair */
         odom.twist.twist.linear.x = smart.vel;
         odom.twist.twist.linear.y = 0;
         odom.twist.twist.linear.z = 0;
+    
+        /* Publishes Twist angular velocity of Wheelchair */
         odom.twist.twist.angular.x = 0;
         odom.twist.twist.angular.y = 0;
         odom.twist.twist.angular.z = smart.getTwistZ()*3.1415926/180;
+    
+        /* Allows for Odometry to be published and sent to ROS */
         chatter.publish(&odom);
         //chatter2.publish(&commandRead);
-        nh.spinOnce();
+        
+        /*Checks for incoming messages */
+        nh.spinOnce();                
 }    
