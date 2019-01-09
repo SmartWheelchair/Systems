@@ -6,19 +6,19 @@ double encoder_distance;                                                        
  
 volatile double Setpoint, Output, Input, Input2;                                       // Variables for PID
 volatile double pid_yaw, Distance, Setpoint2, Output2, encoder_distance2;              // Variables for PID
-volatile double vIn, vOut, vDesired;
-volatile double vInS, vOutS, vDesiredS;
-volatile double yIn, yOut, yDesired;
+volatile double vIn, vOut, vDesired;                                                   // Variables for PID Velosity
+volatile double vInS, vOutS, vDesiredS;                                                // Variables for PID Slave Wheel
+volatile double yIn, yOut, yDesired;                                                   // Variables for PID turn velosity
 
-double dist_old, curr_pos;
+double dist_old, curr_pos;                                                             // Variables for odometry position
 
  
 PID myPID(&pid_yaw, &Output, &Setpoint, 5.5, .00, 0.0036, P_ON_E, DIRECT);             // Angle PID object constructor
 PID myPIDDistance(&Input, &Output, &Setpoint, 5.5, .00, 0.002, P_ON_E, DIRECT);        // Distance PID object constructor
-PID PIDVelosity(&vIn, &vOut, &vDesired, 5.5, .00, .002, P_ON_E, DIRECT);
-PID PIDSlaveV(&vInS, &vOutS, &vDesiredS, 5.5, .00, .002, P_ON_E, DIRECT);
-PID PIDAngularV(&yIn, &yOut, &yDesired, 5.5, .00, .002, P_ON_E, DIRECT);
- 
+PID PIDVelosity(&vIn, &vOut, &vDesired, 5.5, .00, .002, P_ON_E, DIRECT);               // Velosity PID Constructor
+PID PIDSlaveV(&vInS, &vOutS, &vDesiredS, 5.5, .00, .002, P_ON_E, DIRECT);              // Slave Velosity PID Constructor
+PID PIDAngularV(&yIn, &yOut, &yDesired, 5.5, .00, .002, P_ON_E, DIRECT);               // Angular Velosity PID Constructor
+  
 
 /* Thread measures current angular position */
 void Wheelchair::compass_thread() 
