@@ -75,15 +75,17 @@ int main(void)
     
     
     while(1) {
-        //pc.printf("lin x: %f, lin y %f, lin z %f, ang z %f", commandRead.linear.x, commandRead.linear.y, commandRead.linear.z, commandRead.angular.z);
+        /* If Ros comands the wheelchair to move fowards or backwards*/
         if(commandRead.linear.x != 0) 
         {                                        
             smart.pid_twistV();                                           //Updates the twist linear velocity of chair
         } 
+        /* If Ros comands the wheelchair to turn at a certain speed*/
         else if(commandRead.angular.z != 0)                               
         {                         
                 smart.pid_twistA();                                       //Updates the twist angular velocity of chair
         } 
+        /* If Ros does not give velosity comands*/
         else
         {
             smart.stop();                                                 //Stops the chair
