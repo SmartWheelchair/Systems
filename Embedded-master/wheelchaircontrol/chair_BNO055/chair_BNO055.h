@@ -7,8 +7,11 @@
 #include  "BNO055.h"
 
 #define PI 3.141593
+//for large board
 /*#define SDA D14
 #define SCL D15*/
+
+//for small board
 #define SDA D4
 #define SCL D5
 #define SAMPLEFREQ 50
