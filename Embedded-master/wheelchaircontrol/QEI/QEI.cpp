@@ -298,7 +298,7 @@ void QEI::index(void) {
 float QEI::getVelocity()
 {
     getDistance(53.975);
-    velocity_ = ti.read()*(newDistance_-oldDistance_);
+    velocity_ = (newDistance_-oldDistance_)/ti.read();
     ti.reset();
     return velocity_;
 }
