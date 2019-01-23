@@ -26,6 +26,7 @@
 #define Encoder2 D8
 #define Diameter 31.75                  //Diameter of encoder wheel
 
+/* Define pin for emergency stop button*/
 
 /** Wheelchair class
  * Used for controlling the smart wheelchair
