@@ -65,7 +65,7 @@ public:
     
     /* Functions to get IMU data*/
     void compass_thread();
-    void velosity_thread();
+    void velocity_thread();
     void rosCom_thread();
     
     /* Move x millimiters foward using PID*/
