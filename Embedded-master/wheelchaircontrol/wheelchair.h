@@ -97,6 +97,9 @@ public:
     void kitchen();
     void desk_to_kitchen();
     
+    /*Function that stops wheelchair*/
+    void emergency_stop();
+    
     /* Variables for postion, angle, and velocity */
     double x_position;
     double y_position;
