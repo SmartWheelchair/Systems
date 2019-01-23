@@ -446,10 +446,10 @@ void Wheelchair::emergency_stop(class wheelchair)
   Wheelchair::stop(); //stop the wheelchair
  
  /* Reset the whole system*/
- reset(wheelchair);
+  Wheelchair::reset(wheelchair);
 }
 
-void reset(class wheelchair)
+void Wheelchair::reset(class wheelchair)
 {
     wheelchair.x_position = 0;
     wheelchair.y_position = 0;
