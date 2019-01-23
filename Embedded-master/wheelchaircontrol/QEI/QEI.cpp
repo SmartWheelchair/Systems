@@ -1,3 +1,4 @@
+
 /**
  * @author Aaron Berk
  *
@@ -298,8 +299,8 @@ void QEI::index(void) {
 float QEI::getVelocity()
 {
     getDistance(53.975);
-    velocity_ = (newDistance_-oldDistance_)/ti.read();
+    velocity_ = (newDistance_-oldDistance_)/(ti.read()*1000);
+    //printf("Distance %f, Time %f, Velocity %f\r\n", newDistance_-oldDistance_, ti.read(), velocity_);
     ti.reset();
     return velocity_;
 }
-    
