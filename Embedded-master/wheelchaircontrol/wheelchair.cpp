@@ -1,3 +1,4 @@
+
 #include "wheelchair.h"
  
 bool manual_drive = false;                                                             // Variable changes between joystick and auto drive
@@ -28,10 +29,10 @@ void Wheelchair::compass_thread()
 }
 
 /* Thread measures velocity of wheels and distance traveled */
-void Wheelchair::velosity_thread() 
+void Wheelchair::velocity_thread() 
 {
-    curr_vel = wheel->getVelosity();
-    curr_velS = wheelS->getVelosity();
+    curr_vel = wheel->getVelocity();
+    curr_velS = wheelS->getVelocity();
     curr_pos = wheel->getDistance(53.975);
 }
 
@@ -336,10 +337,9 @@ void Wheelchair::pid_twistV()
     x->write(def);
     y->write(def);
     wheel->reset();                                                                     // Resets the encoders
- 
     /* Sets the constants for P and D */
-    PIDVelosity.SetTunings(.00005,0, 0.00);                                             
-    PIDSlaveV.SetTunings(.004,0.000001, 0.000001);     
+    PIDVelosity.SetTunings(.0005,0, 0.00);                                             
+    PIDSlaveV.SetTunings(.01,0.000001, 0.000001);     
  
     /* Limits to the range specified */
     PIDVelosity.SetOutputLimits(-.005, .005);                                           
@@ -351,10 +351,13 @@ void Wheelchair::pid_twistV()
  
     while(1)
     {
+        linearV = .5;
         test1 = linearV*100;
         vel = curr_vel;
         vDesired = linearV*100;
-     
+        out->printf("hello everyone %f\r\n", linearV);
+        if(out->readable())
+            return;
          /* Update and set all variable so that the chair is stationary
          * if the velocity is zero
          */
@@ -385,7 +388,6 @@ void Wheelchair::pid_twistV()
         {
             temporV = 1;
         }
-     
         /* Scales and makes some adjustments to velocity */
         vIn = curr_vel*100;
         vInS = curr_vel-curr_velS;
@@ -463,5 +465,3 @@ void Wheelchair::desk_to_kitchen()
     Wheelchair::pid_right(180);
     Wheelchair::pid_forward(3700);
 }
- 
- 
