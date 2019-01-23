@@ -465,8 +465,6 @@ void reset(class wheelchair)
     wheelchair.out->printf("wheelchair setup done \r\n");                                          // Make sure it initialized; prints in serial monitor
     wheelchair.ti = time;
     wheelchair.myPID.SetMode(AUTOMATIC);             
-
-
 }
 
 
