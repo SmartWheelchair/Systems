@@ -440,6 +440,17 @@ void Wheelchair::resetDistance()
     wheel->reset();
 }
 
+void Wheelchair::emergency_stop()
+{
+ 
+  Wheelchair::stop(); //stop the wheelchair
+ 
+ /* Reset the whole system*/
+ 
+ 
+ 
+}
+
 
 /*Predetermined paths For Demmo*/    
 void Wheelchair::desk() 
