@@ -47,7 +47,7 @@ ros::Publisher chatter2("cmd_vel", &commandRead);                         //Crea
 /* Initialize Wheelchair objects and threads */
 Wheelchair smart(xDir,yDir, &pc, &t, &wheel, &wheelS); 
 Thread compass;                      
-Thread velosity;                      
+Thread velocity;                      
 Thread ros_com;            
 
 /* This thread continues the communication with ROS and Mbed */
@@ -63,14 +63,14 @@ int main(void)
     
     /* Sets up sampling frequency of threads */
     queue.call_every(SAMPLEFREQ, &smart, &Wheelchair::compass_thread);      
-    queue.call_every(SAMPLEFREQ, &smart, &Wheelchair::velosity_thread);    
+    queue.call_every(SAMPLEFREQ, &smart, &Wheelchair::velocity_thread);    
     queue.call_every(200, rosCom_thread);                              
     
     t.reset();                                                            //resets the time
     
     /* Start running threads */
     compass.start(callback(&queue, &EventQueue::dispatch_forever));          
-    velosity.start(callback(&queue, &EventQueue::dispatch_forever));             
+    velocity.start(callback(&queue, &EventQueue::dispatch_forever));             
     ros_com.start(callback(&queue, &EventQueue::dispatch_forever));     
     
     
@@ -85,7 +85,8 @@ int main(void)
         {                         
                 smart.pid_twistA();                                       //Updates the twist angular velocity of chair
         } 
-        /* If Ros does not give velosity comands*/
+        /* If Ros does not give veloc
+        ity comands*/
         else
         {
             smart.stop();                                                 //Stops the chair
