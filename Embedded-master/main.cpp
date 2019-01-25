@@ -78,8 +78,11 @@ int main(void)
     
     
     while(1) {
+        if(e_button == 1){
+            smart.stop();
+        }
         /* If Ros comands the wheelchair to move fowards or backwards*/
-        if(commandRead.linear.x != 0) 
+        else if(commandRead.linear.x != 0) 
         {                                        
             smart.pid_twistV();                                           //Updates the twist linear velocity of chair
         } 
