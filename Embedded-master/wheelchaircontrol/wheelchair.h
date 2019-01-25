@@ -101,9 +101,9 @@ public:
     void emergency_stop();
     
     /*Emergency function (temoprary)*/
-    void emergency_stop(class wheelchair);
+   /* void emergency_stop(class wheelchair);
     void reset(class wheelchair);
-    
+    */
     /* Variables for postion, angle, and velocity */
     double x_position;
     double y_position;
