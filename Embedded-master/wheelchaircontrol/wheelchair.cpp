@@ -440,7 +440,7 @@ void Wheelchair::resetDistance()
     wheel->reset();
 }
 
-void Wheelchair::emergency_stop(class wheelchair)
+void Wheelchair::emergency_stop()
 {
  
   Wheelchair::stop(); //stop the wheelchair
