@@ -8,9 +8,12 @@ DigitalIn pt4(D0, PullUp);
 
 /* Initializes Left encoder */
 QEI wheel (D6, D3, NC, 1200);    
+
 /* Set pull-up resistors to read analog signals into digital signals */
 DigitalIn pt1(D6, PullUp);         
 DigitalIn pt2(D3, PullUp);
+
+DigitalIn e_button(D4, PullUp);     //set pin for emergency button
 
 /* Initializes analog axis for the joystick */
 AnalogIn x(A0);                    
