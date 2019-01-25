@@ -446,25 +446,25 @@ void Wheelchair::emergency_stop(class wheelchair)
   Wheelchair::stop(); //stop the wheelchair
  
  /* Reset the whole system*/
-  Wheelchair::reset(wheelchair);
+ // Wheelchair::reset(wheelchair);
 }
 
-void Wheelchair::reset(class wheelchair)
-{
-    wheelchair.x_position = 0;
-    wheelchair.y_position = 0;
-    /* Initializes X and Y variables to Pins */
-    wheelchair.x = new PwmOut(xPin);                                                               
-    wheelchair.y = new PwmOut(yPin);
-    /* Initializes IMU Library */
-    wheelchair.imu = new chair_BNO055(pc, time);
-    wheelchair.imu->setup();                                                                       // turns on the IMU
-    wheelchair.out = pc;                                                                           // "out" is called for serial monitor
-    wheelchair.wheelS = qeiS;                                                                      // "wheel" is called for encoder
-    wheelchair.wheel = qei;          
-    wheelchair.out->printf("wheelchair setup done \r\n");                                          // Make sure it initialized; prints in serial monitor
-    wheelchair.ti = time;        
-}
+// void Wheelchair::reset(class wheelchair)
+// {
+//     wheelchair.x_position = 0;
+//     wheelchair.y_position = 0;
+//     /* Initializes X and Y variables to Pins */
+//     wheelchair.x = new PwmOut(xPin);                                                               
+//     wheelchair.y = new PwmOut(yPin);
+//     /* Initializes IMU Library */
+//     wheelchair.imu = new chair_BNO055(pc, time);
+//     wheelchair.imu->setup();                                                                       // turns on the IMU
+//     wheelchair.out = pc;                                                                           // "out" is called for serial monitor
+//     wheelchair.wheelS = qeiS;                                                                      // "wheel" is called for encoder
+//     wheelchair.wheel = qei;          
+//     wheelchair.out->printf("wheelchair setup done \r\n");                                          // Make sure it initialized; prints in serial monitor
+//     wheelchair.ti = time;        
+// }
 
 
 
